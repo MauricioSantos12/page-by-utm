@@ -3,6 +3,36 @@ import { Box, Card, CardContent, Skeleton } from "@mui/material";
 function App() {
   const [data, setData] = useState(null);
 
+  async function loadScriptsWithDelay(scripts) {
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    for (const script of scripts) {
+      if (script.src) {
+        const externalScript = document.createElement("script");
+        externalScript.src = script.src;
+        externalScript.async = true;
+        document.body.appendChild(externalScript);
+
+        await new Promise((resolve) => {
+          externalScript.onload = resolve;
+          externalScript.onerror = () => {
+            console.error(`Error al cargar el script: ${script.src}`);
+            resolve();
+          };
+        });
+
+        document.body.removeChild(externalScript);
+      } else {
+        const inlineScript = document.createElement("script");
+        inlineScript.text = script.textContent || script.innerText;
+        document.body.appendChild(inlineScript);
+        document.body.removeChild(inlineScript);
+      }
+
+      await delay(1000);
+    }
+  }
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -29,6 +59,11 @@ function App() {
         }
         const result = await response.json();
         if (result && result.htmlToRender) {
+          // const cleanHtml = result.htmlToRender.replace(
+          //   /<script.*?>([\s\S]*?)<\/script>/i,
+          //   ""
+          // );
+          console.log(result.htmlToRender);
           setData(result.htmlToRender);
         }
       } catch (error) {
@@ -38,6 +73,17 @@ function App() {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (data) {
+      const tempContainer = document.createElement("div");
+      tempContainer.innerHTML = data;
+
+      const scripts = tempContainer.querySelectorAll("script");
+      console.log({ scripts });
+      loadScriptsWithDelay(scripts);
+    }
+  }, [data]);
 
   const RenderCards = () => {
     return (
@@ -187,10 +233,7 @@ function App() {
   };
 
   return data ? (
-    <div
-      dangerouslySetInnerHTML={{ __html: data }}
-      style={{ margin: 0, padding: 0 }}
-    />
+    <div dangerouslySetInnerHTML={{ __html: data }} />
   ) : (
     <RenderSkeleton />
   );
