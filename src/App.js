@@ -28,8 +28,8 @@ function App() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const result = await response.json();
-        if (result && result.responseModel) {
-          setData(result.responseModel);
+        if (result && result.htmlToRender) {
+          setData(result.htmlToRender);
         }
       } catch (error) {
         setData(null);
